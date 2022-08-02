@@ -17,6 +17,9 @@ import os
 import time
 from torch._six import * #string_classes, int_classes, FileNotFoundError
 
+int_classes = int
+string_classes = str
+
 IS_WINDOWS = sys.platform == "win32"
 if IS_WINDOWS:
     import ctypes
