@@ -4,7 +4,7 @@
 # ca_housing 8
 # YearPredictionMSD 90
 # slice_localization 384
-dataset=YearPredictionMSD
+dataset=OVL #YearPredictionMSD #ovl
 
 BASEDIR=$(dirname "$0")
 OUTDIR="${BASEDIR}/ckpt/"
@@ -16,7 +16,7 @@ then
 fi    
 
 CUDA_VISIBLE_DEVICES=0 python -u main_reg_cv.py \
-    --feat_d 90 \
+    --feat_d 14 \
     --hidden_d 32 \
     --boost_rate 1 \
     --lr 0.005 \
@@ -29,6 +29,6 @@ CUDA_VISIBLE_DEVICES=0 python -u main_reg_cv.py \
     --epochs_per_stage 1 \
     --correct_epoch 1 \
     --normalization True \
-    --cv True \
+    --cv False \
     --out_f ${OUTDIR}/${dataset}_cls.pth \
     --cuda

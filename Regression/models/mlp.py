@@ -41,7 +41,7 @@ class MLP_2HL(nn.Module):
         self.lrelu = nn.LeakyReLU(0.1)
         self.relu = nn.ReLU()
         self.hidden_layer = nn.Linear(dim_hidden1, dim_hidden2)
-        self.out_layer = nn.Linear(dim_hidden2, 1)
+        self.out_layer = nn.Linear(dim_hidden2, 2) #ovl, need modify to real out dimension
         self.bn = nn.BatchNorm1d(dim_hidden1)
         self.bn2 = nn.BatchNorm1d(dim_in)
 

@@ -42,7 +42,7 @@ if not opt.cuda:
 
 # prepare the dataset
 def get_data():
-    if opt.data in ['ca_housing', 'ailerons', 'YearPredictionMSD', 'slice_localization']:
+    if opt.data in ['ca_housing', 'ailerons', 'YearPredictionMSD', 'slice_localization', 'OVL']: #ovl
         train = LibSVMRegData(opt.tr, opt.feat_d, opt.normalization)
         test = LibSVMRegData(opt.te, opt.feat_d, opt.normalization)
         val = []
@@ -89,8 +89,8 @@ def root_mse(net_ensemble, loader):
 
         with torch.no_grad():
             _, out = net_ensemble.forward(x)
-        y = y.cpu().numpy().reshape(len(y), 1)
-        out = out.cpu().numpy().reshape(len(y), 1)
+        y = y.cpu().numpy().reshape(len(y), 2) #ovl
+        out = out.cpu().numpy().reshape(len(y), 2) #ovl
         loss += mean_squared_error(y, out)* len(y)
         total += len(y)
     return np.sqrt(loss / total)
@@ -111,6 +111,7 @@ def init_gbnn(train):
 if __name__ == "__main__":
 
     train, test, val = get_data()
+
     N = len(train)
     print(opt.data + ' training and test datasets are loaded!')
     train_loader = DataLoader(train, opt.batch_size, shuffle=True, drop_last=False, num_workers=2)
@@ -120,7 +121,7 @@ if __name__ == "__main__":
     best_rmse = pow(10, 6)
     val_rmse = best_rmse
     best_stage = opt.num_nets-1
-    c0 = np.mean(train.label)  #init_gbnn(train)
+    c0 = torch.from_numpy(np.mean(train.label, axis=0)).cuda()  #ovl #init_gbnn(train)
     net_ensemble = DynamicNet(c0, opt.boost_rate)
     loss_f1 = nn.MSELoss()
     loss_models = torch.zeros((opt.num_nets, 3))
@@ -135,16 +136,20 @@ if __name__ == "__main__":
         stage_mdlloss = []
         for epoch in range(opt.epochs_per_stage):
             for i, (x, y) in enumerate(train_loader):
-                
+                #rint(f'xshape:{x.shape}, yshape:{y.shape}')
                 if opt.cuda:
                     x= x.cuda()
-                    y = torch.as_tensor(y, dtype=torch.float32).cuda().view(-1, 1)
+                    y = torch.as_tensor(y, dtype=torch.float32).cuda().view(-1, 2) #ovl
+                #print(f'xshape:{x.shape}, yshape:{y.shape}')
                 middle_feat, out = net_ensemble.forward(x)
-                out = torch.as_tensor(out, dtype=torch.float32).cuda().view(-1, 1)
+                #print(f'xshape:{x.shape}, yshape:{y.shape}, out shape:{out.shape}')
+                out = torch.as_tensor(out, dtype=torch.float32).cuda().view(-1, 2) #ovl
+                #print(f'xshape:{x.shape}, yshape:{y.shape}, out shape:{out.shape}')
+                
                 grad_direction = -(out-y)
 
                 _, out = model(x, middle_feat)
-                out = torch.as_tensor(out, dtype=torch.float32).cuda().view(-1, 1)
+                out = torch.as_tensor(out, dtype=torch.float32).cuda().view(-1, 2) #ovl
                 loss = loss_f1(net_ensemble.boost_rate*out, grad_direction)  # T
 
                 model.zero_grad()
@@ -171,9 +176,9 @@ if __name__ == "__main__":
                 stage_loss = []
                 for i, (x, y) in enumerate(train_loader):
                     if opt.cuda:
-                        x, y = x.cuda(), y.cuda().view(-1, 1)
+                        x, y = x.cuda(), y.cuda().view(-1, 2) #ovl
                     _, out = net_ensemble.forward_grad(x)
-                    out = torch.as_tensor(out, dtype=torch.float32).cuda().view(-1, 1)
+                    out = torch.as_tensor(out, dtype=torch.float32).cuda().view(-1, 2) #ovl
                     
                     loss = loss_f1(out, y) 
                     optimizer.zero_grad()
